@@ -17,8 +17,55 @@ class AlternativeSimulationManager:
     """
 
     def __init__(self):
+        self.tree = {}
         self.steps: Dict[str, 'SimulationStep'] = {}
         self.alternatives: Dict[str, List[str]] = {}
+
+    def group_alternatives(self, alternatives: list):
+        """
+        Groups alternatives based on shared simulation steps and input data.
+        Each alternative's steps are considered individually, and the tree is built.
+        :param alternatives: List of alternatives to group.
+        """
+        self.tree = self._group_alternatives_recursive(alternatives)
+
+    def _group_alternatives_recursive(self, alternatives: list, step_index: int = 0) -> list:
+        """
+        Recursively groups alternatives based on the simulation steps they have and their associated input data.
+        If alternatives share the same step and input data, they are grouped together.
+        :param alternatives: List of alternatives to group.
+        :param step_index: The index of the current step in the simulation process.
+        :return: A list of groups, each group contains alternatives sharing the same step and input data.
+        """
+        if not alternatives:
+            return []
+
+        # If we have exhausted all steps, return individual alternatives as leaf nodes.
+        if step_index >= max(len(alt.steps) for alt in alternatives):
+            return [[alt] for alt in alternatives]
+
+        # Group alternatives by the current step and input data
+        step_groups = {}
+        for alt in alternatives:
+            if step_index < len(alt.steps):
+                current_step = alt.steps[step_index]
+                step_name = current_step.name
+                input_data = alt.input_data.get(step_name)
+
+                # Create a key for the step and its input data
+                key = (step_name, input_data)
+                if key not in step_groups:
+                    step_groups[key] = []
+                step_groups[key].append(alt)
+
+        # Now, for each group of alternatives, we need to process the next step.
+        groups = []
+        for (step_name, input_data), group in step_groups.items():
+            # Recursively group the alternatives based on the next step
+            sub_groups = self._group_alternatives_recursive(group, step_index + 1)
+            groups.append([step_name, input_data, sub_groups])  # Add step info along with subgroups
+
+        return groups
 
     def add_step(self, name: str, function: Callable, dependencies: Optional[List[str]] = None) -> None:
         """
