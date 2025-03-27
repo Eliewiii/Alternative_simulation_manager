@@ -22,6 +22,19 @@ def indata_2(step2):
 def indata_3(step3):
     return step3.generate_input_data("in_3",{"param5":1,"param6":3.5})
 
+# Fixture for SimulationStep
+@pytest.fixture
+def indata_1_2(step1):
+    return step1.generate_input_data("in_1_2",{"param1":1,"param2":4.})
+
+@pytest.fixture
+def indata_2_2(step2):
+    return step2.generate_input_data("in_2_2",{"param3":1,"param4":4.})
+
+@pytest.fixture
+def indata_3_2(step3):
+    return step3.generate_input_data("in_3_3",{"param5":1,"param6":4.})
+
 class TestInputData:
 
     def test_init(self):

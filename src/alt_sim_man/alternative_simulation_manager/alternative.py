@@ -2,7 +2,7 @@
 
 """
 
-from typing import List
+from typing import List, Tuple
 
 from .input_data import InputData
 from .simulation_step import SimulationStep
@@ -14,7 +14,7 @@ class Alternative:
     but might have unique parameters for its simulation steps.
     """
 
-    def __init__(self, identifier: str, step_list: List[SimulationStep], input_data_list: List[InputData]):
+    def __init__(self, identifier: str, step_input_data_tuple_list: List[Tuple[SimulationStep,InputData]]):
         """
         :param identifier: unique identifier of the alternative
         :param step_list:
@@ -23,7 +23,7 @@ class Alternative:
         self._identifier = identifier
         self._step_list:List[SimulationStep] = []  # List of steps to run for this alternative in order
         self._input_data_list:List[InputData] = []  # List of corresponding input data
-        for sim_step, input_data in zip(step_list, input_data_list):
+        for sim_step, input_data in step_input_data_tuple_list:
             self.add_simulation_step(sim_step, input_data)
 
     @property

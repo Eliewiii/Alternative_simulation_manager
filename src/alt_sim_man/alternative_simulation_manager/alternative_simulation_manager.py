@@ -6,6 +6,8 @@ import os
 from typing import Callable, Dict, List, Optional
 
 from .simulation_step import SimulationStep
+from .alternative import Alternative
+from .input_data import InputData
 
 
 class AlternativeSimulationManager:
@@ -17,19 +19,32 @@ class AlternativeSimulationManager:
     """
 
     def __init__(self):
-        self.tree = {}
-        self.steps: Dict[str, 'SimulationStep'] = {}
-        self.alternatives: Dict[str, List[str]] = {}
+        self._tree = []
+        # self.steps: Dict[str, 'SimulationStep'] = {}
 
-    def group_alternatives(self, alternatives: list):
+        self._alternative_dict: Dict[str, Alternative] = {}
+
+    @property
+    def alternative_dict(self):
+        return self._alternative_dict
+
+    @property
+    def alternative_id_list(self):
+        return list(self._alternative_dict.keys())
+
+    @property
+    def _alternative_list(self):
+        return list(self._alternative_dict.values())
+
+    def group_alternatives(self):
         """
         Groups alternatives based on shared simulation steps and input data.
         Each alternative's steps are considered individually, and the tree is built.
         :param alternatives: List of alternatives to group.
         """
-        self.tree = self._group_alternatives_recursive(alternatives)
+        self._tree = self._group_alternatives_recursive(self._alternative_list,step_index=0)
 
-    def _group_alternatives_recursive(self, alternatives: list, step_index: int = 0) -> list:
+    def _group_alternatives_recursive(self, alternative_list: List[Alternative], step_index: int = 0) -> list:
         """
         Recursively groups alternatives based on the simulation steps they have and their associated input data.
         If alternatives share the same step and input data, they are grouped together.
@@ -37,16 +52,16 @@ class AlternativeSimulationManager:
         :param step_index: The index of the current step in the simulation process.
         :return: A list of groups, each group contains alternatives sharing the same step and input data.
         """
-        if not alternatives:
+        if not alternative_list:
             return []
 
-        # If we have exhausted all steps, return individual alternatives as leaf nodes.
-        if step_index >= max(len(alt.steps) for alt in alternatives):
-            return [[alt] for alt in alternatives]
+        # # If we have exhausted all steps, return individual alternatives as leaf nodes.
+        # if step_index >= max(len(alt.steps) for alt in alternatives):
+        #     return [[alt] for alt in alternatives]
 
         # Group alternatives by the current step and input data
-        step_groups = {}
-        for alt in alternatives:
+        group_dict = {}
+        for alt in alternative_list:
             if step_index < len(alt.steps):
                 current_step = alt.steps[step_index]
                 step_name = current_step.name
@@ -54,31 +69,20 @@ class AlternativeSimulationManager:
 
                 # Create a key for the step and its input data
                 key = (step_name, input_data)
-                if key not in step_groups:
-                    step_groups[key] = []
-                step_groups[key].append(alt)
+                if key not in group_dict:
+                    group_dict[key] = []
+                group_dict[key].append(alt)
 
-        # Now, for each group of alternatives, we need to process the next step.
-        groups = []
-        for (step_name, input_data), group in step_groups.items():
+        # Process to the next step for each group
+        tree = []
+        for grouped_alt_list in group_dict.values():
             # Recursively group the alternatives based on the next step
             sub_groups = self._group_alternatives_recursive(group, step_index + 1)
-            groups.append([step_name, input_data, sub_groups])  # Add step info along with subgroups
+            tree.append(grouped_alt_list.append(sub_groups))  # Add step info along with subgroups
 
-        return groups
+        return tree
 
-    def add_step(self, name: str, function: Callable, dependencies: Optional[List[str]] = None) -> None:
-        """
-        Add a simulation step to the manager.
-
-        :param name: The name of the simulation step.
-        :param function: A callable function for the step.
-        :param dependencies: A list of dependencies for the step (optional).
-        :return: None
-        """
-        self.steps[name] = SimulationStep(name, function, dependencies)
-
-    def add_alternative(self, alt_name: str, workflow_steps: List[str]) -> None:
+    def add_alternative(self, alternative: Alternative) -> None:
         """
         Add an alternative simulation workflow to the manager.
 
@@ -86,7 +90,9 @@ class AlternativeSimulationManager:
         :param workflow_steps: A list of step names that define the workflow.
         :return: None
         """
-        self.alternatives[alt_name] = workflow_steps
+        if not isinstance(alternative,Alternative):
+            raise TypeError(f"the object {alternative} is not an Alternative object")
+        self._alternative_dict[alternative.identifier] = alternative
 
     def run(self, alt_name: str) -> Dict[str, any]:
         """
@@ -96,18 +102,18 @@ class AlternativeSimulationManager:
         :return: A dictionary with step names as keys and their corresponding results as values.
         :raises ValueError: If the alternative or step names are invalid.
         """
-        if alt_name not in self.alternatives:
-            raise ValueError(f"❌ Alternative '{alt_name}' not found")
-
-        results = {}
-        for step_name in self.alternatives[alt_name]:
-            if step_name not in self.steps:
-                raise ValueError(f"❌ Step '{step_name}' not found in the manager")
-
-            step = self.steps[step_name]
-            inputs = [results[dep] for dep in step.dependencies]
-            results[step_name] = step.run(inputs)
-        return results
+        # if alt_name not in self.alternatives:
+        #     raise ValueError(f"❌ Alternative '{alt_name}' not found")
+        #
+        # results = {}
+        # for step_name in self.alternatives[alt_name]:
+        #     if step_name not in self.steps:
+        #         raise ValueError(f"❌ Step '{step_name}' not found in the manager")
+        #
+        #     step = self.steps[step_name]
+        #     inputs = [results[dep] for dep in step.dependencies]
+        #     results[step_name] = step.run(inputs)
+        # return results
 
     @staticmethod
     def save(obj: 'AlternativeSimulationManager', filename: str) -> None:
