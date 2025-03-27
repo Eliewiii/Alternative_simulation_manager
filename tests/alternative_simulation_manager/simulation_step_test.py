@@ -15,6 +15,7 @@ def step1():
         required_params=[{"name":"param1","type":int}, {"name":"param2","type":float,"optional":True}]
     )
 
+@pytest.fixture
 def step2():
     return SimulationStep(
         name="Step 2",
@@ -22,6 +23,7 @@ def step2():
         required_params=[{"name":"param3","type":int}, {"name":"param4","type":float,"optional":True}]
     )
 
+@pytest.fixture
 def step3():
     return SimulationStep(
         name="Step 3",

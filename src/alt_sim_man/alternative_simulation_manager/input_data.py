@@ -7,7 +7,7 @@ class InputData:
     This class represents the input data for a specific simulation step.
     It holds parameters that are specific to the step, and can be preprocessed before assignment.
     """
-    def __init__(self, identifier: str, step_name: str, **params: dict):
+    def __init__(self, identifier: str, step_name: str, params: dict):
         """
         Initialize the InputData with a unique identifier, the name of the associated step, and parameters.
 
@@ -15,9 +15,21 @@ class InputData:
         :param step_name: The name of the simulation step to which this InputData is tied.
         :param params: Parameters specific to the simulation step.
         """
-        self.identifier = identifier
-        self.step_name = step_name
-        self.params = params
+        self._identifier = identifier
+        self._step_name = step_name
+        self._params = params
+
+    @property
+    def identifier(self):
+        return self._identifier
+
+    @property
+    def step_name(self):
+        return self._step_name
+
+    @property
+    def params(self):
+        return self._params
 
     def preprocess(self) -> None:
         """
@@ -28,13 +40,6 @@ class InputData:
         """
         pass
 
-    def get_params(self) -> dict:
-        """
-        Return the parameters as a dictionary.
-
-        :return: A dictionary of parameters for the simulation step.
-        """
-        return self.params
 
     def __repr__(self) -> str:
         return f"InputData(identifier={self.identifier}, step_name={self.step_name}, params={self.params})"
@@ -52,7 +57,7 @@ class InputData:
 
         # Compare identifier, step_name, and params (dictionary)
         return (
-                self.identifier == other.identifier and
-                self.step_name == other.step_name and
-                self.params == other.params
+                self._identifier == other.identifier and
+                self._step_name == other.step_name and
+                self._params == other.params
         )

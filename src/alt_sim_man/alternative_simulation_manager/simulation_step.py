@@ -19,12 +19,35 @@ class SimulationStep:
     :param dependencies: A list of other step names that this step depends on (optional).
     """
 
-    def __init__(self, name: str, function: Callable,required_params: List[Dict[str, Any]] ,dependencies: Optional[List[str]] = None):
-        self.name = name
-        self.function = function
-        self.required_params = required_params
-        self.dependencies = dependencies or []
-        self.result = None
+    def __init__(self, name: str, function: Callable, required_params: List[Dict[str, Any]],
+                 dependencies: Optional[List[str]] = None, parallelizable: Optional[bool] = False, prefix: Optional[str]=None):
+        self._name = name
+        self._function = function
+        self._required_params = required_params
+        self._dependencies = dependencies or []
+        self._parallelizable = parallelizable
+
+        self._prefix=prefix
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def function(self):
+        return self._function
+
+    @property
+    def required_params(self):
+        return self._required_params
+
+    @property
+    def parallelizable(self):
+        return self._parallelizable
+
+    @property
+    def prefix(self):
+        return self._prefix if self._prefix is not None else self._name
 
     def run(self, inputs: List) -> any:
         """
@@ -37,7 +60,7 @@ class SimulationStep:
             self.result = self.function(*inputs)
         return self.result
 
-    def generate_input_data(self, identifier: str, **params: dict) -> InputData:
+    def generate_input_data(self, identifier: str, params: dict, check_validity_only=False) -> InputData | None:
         """
         Generate InputData for this simulation step.
 
@@ -46,6 +69,7 @@ class SimulationStep:
         :return: An InputData instance.
         """
         missing_params = []
+        invalid_type_params = []
         invalid_params = []
 
         # Validate each required parameter
@@ -61,16 +85,44 @@ class SimulationStep:
             else:
                 # Check if the type matches
                 if not isinstance(params[param_name], param_type):
-                    invalid_params.append(param_name)
+                    invalid_type_params.append(param_name)
+
+        for param in params:
+            if param not in [argument["name"] for argument in self.required_params]:
+                invalid_params.append(param)
 
         if missing_params:
-            raise ValueError(f"Missing required parameters for step {self.name}: {', '.join(missing_params)}")
+            raise ValueError(f"Missing required parameters for step {self._name}: {', '.join(missing_params)}")
+        if invalid_type_params:
+            raise ValueError(f"Invalid types for parameters in step {self._name}: {', '.join(invalid_type_params)}")
         if invalid_params:
-            raise ValueError(f"Invalid types for parameters in step {self.name}: {', '.join(invalid_params)}")
+            raise ValueError(f"Invalid parameters in step {self._name}: {', '.join(invalid_params)}")
+
+        if check_validity_only:
+            return
 
         # Generate and return InputData
-        input_data = InputData(identifier, self.name, **params)
+        input_data = InputData(identifier, self._name, params)
         return input_data
+
+    def is_inputdata_from_self(self, inputdata: InputData):
+        """
+        Check if an InpuData object belongs to the SimulationStep with the proper properties.
+        :param inputdata:
+        :return:
+        """
+
+        if not self._name == inputdata.step_name:
+            raise ValueError(f"Missmatch between SimulationStep and InputData, got SimulationStep '{self.name}'"
+                             f" and InputData for '{inputdata.step_name}'")
+        try:
+            self.generate_input_data(identifier=inputdata.identifier,params=inputdata.params,check_validity_only=True)
+        except ValueError:
+            raise ValueError(f"InputData '{inputdata.identifier}' parameters are inconsistent with "
+                             f" SimulationStep '{self.name}' ")
+
+        return True
+
 
 
 
@@ -127,7 +179,7 @@ class SimulationStep:
 
         # Compare identifier, step_name, and params (dictionary)
         return (
-                self.name == other.name and
+                self._name == other.name and
                 self.required_params == other.required_params and
                 self.function.__name__ == other.function.__name__
         )
