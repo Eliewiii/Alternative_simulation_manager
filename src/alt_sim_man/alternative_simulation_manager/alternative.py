@@ -26,6 +26,12 @@ class Alternative:
         for sim_step, input_data in step_input_data_tuple_list:
             self.add_simulation_step(sim_step, input_data)
 
+    def __repr__(self):
+        return self._identifier
+
+    def __str__(self):
+        return self._identifier
+
     @property
     def identifier(self):
         return self._identifier
@@ -63,6 +69,30 @@ class Alternative:
                            zip(self._step_list, self._input_data_list)])
         else:
             return
+
+    @classmethod
+    def has_same_simulation_step(cls,alternative_1:'Alternative',alternative_2:'Alternative',step_index:int, check_inputdata:bool=False):
+        """
+
+        :param alternative_1:
+        :param alternative_2:
+        :param step_index:
+        :param check_inputdata:
+        :return:
+        """
+        if not isinstance(alternative_1,cls) or not isinstance(alternative_2,cls):
+            raise TypeError(f"Expected Alternative objects, got {type(alternative_1)} and {alternative_2}")
+
+        if step_index>=alternative_1.num_step or step_index>=alternative_2.num_step:
+            raise IndexError(f"Expected more than {step_index} steps, got {alternative_1.num_step} and {alternative_2.num_step} steps")
+
+        if not alternative_1._step_list[step_index] == alternative_2.step_list[step_index]:
+            return False
+        if check_inputdata and not alternative_1._input_data_list[step_index] == alternative_2._input_data_list[step_index]:
+            return False
+
+        return True
+
 
     def run(self) -> dict:
         """

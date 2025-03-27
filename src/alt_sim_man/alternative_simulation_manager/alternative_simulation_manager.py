@@ -3,6 +3,7 @@ Class to manage alternatives for simulations with multiple common simulation ste
 """
 import dill
 import os
+import logging
 from typing import Callable, Dict, List, Optional
 
 from .simulation_step import SimulationStep
@@ -25,8 +26,12 @@ class AlternativeSimulationManager:
         self._alternative_dict: Dict[str, Alternative] = {}
 
     @property
-    def alternative_dict(self):
-        return self._alternative_dict
+    def simulation_tree(self):
+        return to_str_recursive(self._tree)
+
+    @property
+    def num_alternatives(self):
+        return len(self._alternative_dict)
 
     @property
     def alternative_id_list(self):
@@ -36,7 +41,7 @@ class AlternativeSimulationManager:
     def _alternative_list(self):
         return list(self._alternative_dict.values())
 
-    def group_alternatives(self):
+    def group_alternatives_to_tree(self):
         """
         Groups alternatives based on shared simulation steps and input data.
         Each alternative's steps are considered individually, and the tree is built.
@@ -60,39 +65,45 @@ class AlternativeSimulationManager:
         #     return [[alt] for alt in alternatives]
 
         # Group alternatives by the current step and input data
-        group_dict = {}
+        group_list = []
         for alt in alternative_list:
-            if step_index < len(alt.steps):
-                current_step = alt.steps[step_index]
-                step_name = current_step.name
-                input_data = alt.input_data.get(step_name)
+            if step_index < alt.num_step:
+                added_flag = False
+                for group in group_list:
+                    if Alternative.has_same_simulation_step(alt,group[0],step_index,check_inputdata=True):
+                        group.append(alt)
+                        added_flag =True
+                        break
+                if not added_flag:
+                    group_list.append([alt])
 
-                # Create a key for the step and its input data
-                key = (step_name, input_data)
-                if key not in group_dict:
-                    group_dict[key] = []
-                group_dict[key].append(alt)
 
         # Process to the next step for each group
         tree = []
-        for grouped_alt_list in group_dict.values():
+        for group in group_list:
             # Recursively group the alternatives based on the next step
-            sub_groups = self._group_alternatives_recursive(group, step_index + 1)
-            tree.append(grouped_alt_list.append(sub_groups))  # Add step info along with subgroups
+            sub_groups = self._group_alternatives_recursive(list(group), step_index + 1)
+            group_with_next_steps = list(group)
+            group_with_next_steps.append(list(sub_groups) if sub_groups !=[] else [])
+            tree.append(group_with_next_steps)  # Add step info along with subgroups
 
-        return tree
+        return list(tree)
 
-    def add_alternative(self, alternative: Alternative) -> None:
+    def add_alternatives(self, alternative_list: List[Alternative]) -> None:
         """
-        Add an alternative simulation workflow to the manager.
+        Add a list of Alternative to the simulation manager.
 
-        :param alt_name: The name of the alternative workflow.
-        :param workflow_steps: A list of step names that define the workflow.
+        :param alternative_list: The name of the alternative workflow.
         :return: None
         """
-        if not isinstance(alternative,Alternative):
-            raise TypeError(f"the object {alternative} is not an Alternative object")
-        self._alternative_dict[alternative.identifier] = alternative
+        for alternative in alternative_list:
+            if not isinstance(alternative,Alternative):
+                raise TypeError(f"the object {alternative} is not an Alternative object")
+            if alternative.identifier in list[self._alternative_dict.keys()]:
+                logging.WARNING(f"The alternative {alternative.identifier} is already in the "
+                                 f"AlternativeSurfaceManager, it will not be added a second time")
+                return
+            self._alternative_dict[alternative.identifier] = alternative
 
     def run(self, alt_name: str) -> Dict[str, any]:
         """
@@ -176,3 +187,10 @@ class AlternativeSimulationManager:
 
         print("✅ AlternativeSimulationManager created from pickled SimulationSteps.")
         return manager
+
+
+def to_str_recursive(data):
+    """Recursively converts all elements in a list (and sublists) to strings."""
+    if isinstance(data, list):
+        return [to_str_recursive(item) for item in data]  # Recursively process sublists
+    return str(data)  # Convert non-list elements to string
