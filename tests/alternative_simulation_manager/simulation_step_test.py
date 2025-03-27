@@ -28,3 +28,21 @@ def step3():
         function= max,
         required_params=[{"name":"param5","type":int}, {"name":"param6","type":float,"optional":True}]
     )
+
+class TestSimulationStep:
+
+    def test_init(self):
+
+        sim_step = SimulationStep("test",max, [{"name":"param1","type":int}, {"name":"param2","type":float,"optional":True}])
+
+    def test_equality(self):
+        sim_step_1 = SimulationStep("test",max, [{"name":"param1","type":int}, {"name":"param2","type":float,"optional":True}])
+
+        sim_step_2 = SimulationStep("test",max, [{"name":"param1","type":int}, {"name":"param2","type":float,"optional":True}])
+
+        assert sim_step_1==sim_step_2
+
+        sim_step_2 = SimulationStep("test",max, [{"name":"param3","type":int}, {"name":"param2","type":float,"optional":True}])
+
+        assert not sim_step_1 == sim_step_2
+

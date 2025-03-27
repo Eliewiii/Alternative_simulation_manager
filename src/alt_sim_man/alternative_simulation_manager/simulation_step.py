@@ -113,3 +113,21 @@ class SimulationStep:
         except Exception as e:
             print(f"❌ Error loading SimulationStep: {e}")
             raise
+
+    def __eq__(self, other: object) -> bool:
+        """
+        Compare two InputData objects for equality. They are considered equal if they have the same identifier,
+        step name, and parameters.
+
+        :param other: The other object to compare against.
+        :return: True if the objects are considered equal, False otherwise.
+        """
+        if not isinstance(other, SimulationStep):
+            return False  # Ensure we are comparing InputData objects
+
+        # Compare identifier, step_name, and params (dictionary)
+        return (
+                self.name == other.name and
+                self.required_params == other.required_params and
+                self.function.__name__ == other.function.__name__
+        )
