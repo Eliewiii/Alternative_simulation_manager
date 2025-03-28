@@ -23,10 +23,13 @@ class SimulationExecutor:
         # Config
 
 
-    def run(self,path_simulation_folder:str, overwrite:bool=False):
+    def run(self,path_simulation_folder:str, overwrite:bool=False,run_in_parallel:Optional[bool]=False,):
         """
 
         :param path_simulation_folder:
+        :param overwrite: bool, True if all the alternative simulation folders should be overwritten. If False and some
+            folder are already present (due to a simulation that was interrupted), the simulation will start again from
+            where it stopped.
         :return:
         """
 
