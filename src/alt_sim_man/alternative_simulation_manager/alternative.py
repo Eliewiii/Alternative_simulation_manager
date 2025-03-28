@@ -13,6 +13,7 @@ class Alternative:
     Represents a specific alternative simulation, which could share steps with other alternatives
     but might have unique parameters for its simulation steps.
     """
+    NAME_PROGRESS_FILE = "progress.json"
 
     def __init__(self, identifier: str, step_input_data_tuple_list: List[Tuple[SimulationStep,InputData]]):
         """
@@ -92,6 +93,21 @@ class Alternative:
             return False
 
         return True
+
+    def make_progress_json_file(self,path_folder:str):
+        """
+        Create the file to track the progress
+        :param path_folder:
+        :return:
+        """
+        c
+
+    def update_progress_json_file(self,path_folder:str):
+        """
+
+        :param path_folder:
+        :return:
+        """
 
 
     def run(self) -> dict:

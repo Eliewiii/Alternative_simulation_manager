@@ -20,14 +20,8 @@ class AlternativeSimulationManager:
     """
 
     def __init__(self):
-        self._tree = []
-        # self.steps: Dict[str, 'SimulationStep'] = {}
-
         self._alternative_dict: Dict[str, Alternative] = {}
 
-    @property
-    def simulation_tree(self):
-        return to_str_recursive(self._tree)
 
     @property
     def num_alternatives(self):
@@ -41,13 +35,13 @@ class AlternativeSimulationManager:
     def _alternative_list(self):
         return list(self._alternative_dict.values())
 
-    def group_alternatives_to_tree(self):
+    def group_alternatives_to_tree(self,alternative_id_list):
         """
         Groups alternatives based on shared simulation steps and input data.
         Each alternative's steps are considered individually, and the tree is built.
         :param alternatives: List of alternatives to group.
         """
-        self._tree = self._group_alternatives_recursive(self._alternative_list,step_index=0)
+        return self._group_alternatives_recursive([self._alternative_dict[id] for id in alternative_id_list],step_index=0)
 
     def _group_alternatives_recursive(self, alternative_list: List[Alternative], step_index: int = 0) -> list:
         """
@@ -105,14 +99,29 @@ class AlternativeSimulationManager:
                 return
             self._alternative_dict[alternative.identifier] = alternative
 
-    def run(self, alt_name: str) -> Dict[str, any]:
+    def set_up(self, path_simulation_folder:str, alternative_id_list: Optional[List[str]] = []) -> Dict[str, any]:
         """
         Run a simulation based on the selected alternative.
 
         :param alt_name: The name of the alternative workflow to run.
         :return: A dictionary with step names as keys and their corresponding results as values.
-        :raises ValueError: If the alternative or step names are invalid.
         """
+        # Set the alternatives to run
+        if  alternative_id_list:
+            alternative_id_list = set(alternative_id_list) # remove duplicate
+
+            invalid_id = []
+            for alternative_id in alternative_id_list:
+                if alternative_id not in self._alternative_dict:
+                    invalid_id.append(alternative_id)
+            if invalid_id:
+                raise KeyError(f"The alternatives with ids:'{"', '".join(invalid_id)}' are not part of the "
+                               f"AlternativeSimulationManager. Please input only valid alternatives")
+        else:
+            alternative_id_list = self.alternative_id_list
+        # Group alternatives at each simulation steps
+        self.group_alternatives_to_tree(alternative_id_list=alternative_id_list)
+
         # if alt_name not in self.alternatives:
         #     raise ValueError(f"❌ Alternative '{alt_name}' not found")
         #

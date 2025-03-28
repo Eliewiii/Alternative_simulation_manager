@@ -26,7 +26,9 @@ class TestAlternativeSimulationManager:
     def test_group_alternatives_to_tree(self,alt1,alt2,alt3,alt4,alt5,alt6):
         alt_sim_manager = AlternativeSimulationManager()
         alt_sim_manager.add_alternatives([alt1, alt2, alt3,alt4,alt5,alt6])
-        alt_sim_manager.group_alternatives_to_tree()
+        tree = alt_sim_manager.group_alternatives_to_tree(alternative_id_list=alt_sim_manager.alternative_id_list)
+
+        # assert
 
         print("ok")
 
